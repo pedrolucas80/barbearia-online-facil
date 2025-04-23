@@ -61,6 +61,12 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				barbearia: {
+					background: '#1A1A1A',
+					yellow: '#FFC107',
+					dark: '#121212',
+					card: '#212121'
 				}
 			},
 			borderRadius: {
