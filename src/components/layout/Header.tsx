@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { CalendarClock } from "lucide-react";
 
 const Header = () => {
   const [userType, setUserType] = useState<string | null>(null);
@@ -31,9 +32,23 @@ const Header = () => {
           {userType === "admin" ? (
             <span className="text-sm text-gray-300">Admin</span>
           ) : (
-            <span className="text-sm text-gray-300">
-              {localStorage.getItem("userEmail")}
-            </span>
+            <div className="flex items-center gap-4">
+              <Link 
+                to="/agendar" 
+                className="text-sm text-gray-300 hover:text-barbearia-yellow transition-colors"
+              >
+                Agendar
+              </Link>
+              <Link 
+                to="/meus-agendamentos" 
+                className="text-sm text-gray-300 hover:text-barbearia-yellow transition-colors"
+              >
+                Meus Agendamentos
+              </Link>
+              <span className="text-sm text-gray-300">
+                {localStorage.getItem("userEmail")}
+              </span>
+            </div>
           )}
           <Button 
             variant="outline" 

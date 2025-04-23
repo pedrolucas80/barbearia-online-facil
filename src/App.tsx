@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import AdminLogin from "./pages/AdminLogin";
 import Scheduling from "./pages/Scheduling";
 import AdminPanel from "./pages/AdminPanel";
+import MyAppointments from "./pages/MyAppointments";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/cadastrar" element={<Register />} />
             <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/agendar" element={<Scheduling />} />
+            <Route path="/meus-agendamentos" element={<MyAppointments />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
