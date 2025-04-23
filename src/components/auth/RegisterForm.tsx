@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const RegisterForm = () => {
   const [name, setName] = useState("");
@@ -11,30 +11,20 @@ const RegisterForm = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { signUp } = useAuth();
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulando criação de conta para o MVP
-    setTimeout(() => {
-      // Para este MVP, apenas salvamos em localStorage
-      const users = JSON.parse(localStorage.getItem("users") || "[]");
-      users.push({ name, email, password });
-      localStorage.setItem("users", JSON.stringify(users));
-      
-      localStorage.setItem("userType", "client");
-      localStorage.setItem("userEmail", email);
-      
-      toast({
-        title: "Conta criada com sucesso!",
-        description: "Bem-vindo à Barbearia.",
-      });
-      
-      navigate("/agendar");
+    try {
+      await signUp(email, password);
+      navigate("/");
+    } catch (error) {
+      // O erro já será mostrado pelo AuthContext
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (

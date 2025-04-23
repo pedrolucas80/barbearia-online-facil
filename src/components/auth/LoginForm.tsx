@@ -3,32 +3,27 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { signIn } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulando uma autenticação
-    setTimeout(() => {
-      if (email === "admin@barbearia.com" && password === "admin123") {
-        localStorage.setItem("userType", "admin");
-        navigate("/admin");
-      } else {
-        // Para este MVP, permitimos qualquer email/senha para clientes
-        localStorage.setItem("userType", "client");
-        localStorage.setItem("userEmail", email);
-        navigate("/agendar");
-      }
+    try {
+      await signIn(email, password);
+      
+      // A navegação será tratada pelo efeito no componente Login
       setIsLoading(false);
-    }, 1000);
+    } catch (error) {
+      setIsLoading(false);
+    }
   };
 
   const handleAdminAccess = () => {

@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 const AdminLoginForm = () => {
@@ -10,26 +11,31 @@ const AdminLoginForm = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Verificando credenciais de admin
-    setTimeout(() => {
-      if (email === "admin@barbearia.com" && password === "admin123") {
-        localStorage.setItem("userType", "admin");
-        navigate("/admin");
-      } else {
+    try {
+      await signIn(email, password);
+      
+      if (email !== "admin@barbearia.com") {
         toast({
           variant: "destructive",
-          title: "Erro de autenticação",
-          description: "Credenciais de administrador inválidas.",
+          title: "Acesso negado",
+          description: "Esta área é restrita para administradores.",
         });
+        return;
       }
+      
+      navigate("/admin");
+    } catch (error) {
+      // O erro já será mostrado pelo AuthContext
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
