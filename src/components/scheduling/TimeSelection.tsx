@@ -1,4 +1,3 @@
-
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -19,6 +18,25 @@ const TimeSelection = ({ onSelect, selectedTime, date, barberId }: TimeSelection
     if (!date || !barberId) return [];
     return getBookedTimes(date, barberId);
   }, [date, barberId]);
+
+  const isTimeDisabled = (time: string) => {
+    if (!date) return true;
+    
+    const [hours, minutes] = time.split(":").map(Number);
+    const selectedDateTime = new Date(date);
+    selectedDateTime.setHours(hours, minutes);
+    
+    const now = new Date();
+    
+    return bookedTimes.includes(time) || selectedDateTime < now;
+  };
+
+  const getAvailableTimes = (times: string[]) => {
+    return times.filter(time => !isTimeDisabled(time));
+  };
+
+  const availableMorningTimes = getAvailableTimes(morningTimes);
+  const availableAfternoonTimes = getAvailableTimes(afternoonTimes);
   
   return (
     <div>
@@ -30,55 +48,49 @@ const TimeSelection = ({ onSelect, selectedTime, date, barberId }: TimeSelection
         </p>
       ) : (
         <>
-          <div className="mb-6">
-            <h3 className="text-lg mb-3 text-gray-400">Manhã</h3>
-            <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-              {morningTimes.map((time) => {
-                const isBooked = bookedTimes.includes(time);
-                return (
+          {availableMorningTimes.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-lg mb-3 text-gray-400">Manhã</h3>
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                {availableMorningTimes.map((time) => (
                   <Button
                     key={time}
                     variant={selectedTime === time ? "default" : "outline"}
-                    disabled={isBooked}
                     onClick={() => onSelect(time)}
                     className={cn(
                       selectedTime === time 
                         ? "bg-barbearia-yellow text-black hover:bg-amber-400" 
-                        : "border-gray-700 hover:bg-barbearia-dark",
-                      isBooked && "opacity-50 cursor-not-allowed"
+                        : "border-gray-700 hover:bg-barbearia-dark"
                     )}
                   >
                     {time}
                   </Button>
-                );
-              })}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           
-          <div>
-            <h3 className="text-lg mb-3 text-gray-400">Tarde</h3>
-            <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-              {afternoonTimes.map((time) => {
-                const isBooked = bookedTimes.includes(time);
-                return (
+          {availableAfternoonTimes.length > 0 && (
+            <div>
+              <h3 className="text-lg mb-3 text-gray-400">Tarde</h3>
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                {availableAfternoonTimes.map((time) => (
                   <Button
                     key={time}
                     variant={selectedTime === time ? "default" : "outline"}
-                    disabled={isBooked}
                     onClick={() => onSelect(time)}
                     className={cn(
                       selectedTime === time 
                         ? "bg-barbearia-yellow text-black hover:bg-amber-400" 
-                        : "border-gray-700 hover:bg-barbearia-dark",
-                      isBooked && "opacity-50 cursor-not-allowed"
+                        : "border-gray-700 hover:bg-barbearia-dark"
                     )}
                   >
                     {time}
                   </Button>
-                );
-              })}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </>
       )}
     </div>

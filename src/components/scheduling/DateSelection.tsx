@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format, isToday, isBefore, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -71,12 +70,10 @@ const DateSelection = ({ onSelect, selectedDate }: DateSelectionProps) => {
         </div>
         
         <div className="grid grid-cols-7 gap-2">
-          {/* Espaçadores para o primeiro dia do mês */}
           {Array.from({ length: startingDayOfWeek }).map((_, index) => (
             <div key={`empty-${index}`} className="p-2" />
           ))}
           
-          {/* Dias do mês */}
           {daysInMonth.map((date) => {
             const isSelected = selectedDate && 
               date.getDate() === selectedDate.getDate() && 
@@ -93,7 +90,7 @@ const DateSelection = ({ onSelect, selectedDate }: DateSelectionProps) => {
                 className={cn(
                   "h-10 p-0 rounded-full",
                   isPast ? "opacity-50 cursor-not-allowed" : "",
-                  isSelected ? "bg-barbearia-yellow text-black hover:bg-amber-400" : "hover:bg-barbearia-dark"
+                  isSelected ? "bg-[#8E3D0F] text-white hover:bg-[#8E3D0F]/90" : "hover:bg-barbearia-dark"
                 )}
               >
                 {format(date, "d")}

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
@@ -8,6 +7,7 @@ import TimeSelection from "@/components/scheduling/TimeSelection";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { saveAppointment } from "@/services/AppointmentService";
+import AppointmentPreview from "@/components/scheduling/AppointmentPreview";
 
 const Scheduling = () => {
   const [selectedBarber, setSelectedBarber] = useState<string | null>(null);
@@ -95,6 +95,12 @@ const Scheduling = () => {
             selectedTime={selectedTime}
             date={selectedDate}
             barberId={selectedBarber}
+          />
+          
+          <AppointmentPreview
+            barberId={selectedBarber}
+            selectedDate={selectedDate}
+            selectedTime={selectedTime}
           />
           
           <div className="mt-8">
