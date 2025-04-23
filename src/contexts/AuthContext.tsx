@@ -1,9 +1,7 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
 
 interface AuthContextType {
   user: User | null;
@@ -19,41 +17,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   useEffect(() => {
-    // Configurar o listener de mudança de estado de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Atualizar o userType no localStorage baseado no email
         if (session?.user) {
           const isAdmin = session.user.email === "admin@barbearia.com";
           localStorage.setItem("userType", isAdmin ? "admin" : "client");
           localStorage.setItem("userEmail", session.user.email ?? "");
-
-          // Redirecionar após login
-          if (isAdmin) {
-            navigate("/admin");
-          } else {
-            navigate("/agendar");
-          }
         }
       }
     );
 
-    // Verificar sessão existente
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, []);
 
-  // ... resto do código permanece igual
   const signIn = async (email: string, password: string) => {
     try {
       const { error, data: { session } } = await supabase.auth.signInWithPassword({

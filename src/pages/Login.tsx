@@ -3,19 +3,23 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import LoginForm from "@/components/auth/LoginForm";
 import Header from "@/components/layout/Header";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     // Verifica se o usuário já está autenticado
-    const userType = localStorage.getItem("userType");
-    if (userType === "admin") {
-      navigate("/admin");
-    } else if (userType === "client") {
-      navigate("/agendar");
+    if (user) {
+      const userType = localStorage.getItem("userType");
+      if (userType === "admin") {
+        navigate("/admin");
+      } else if (userType === "client") {
+        navigate("/agendar");
+      }
     }
-  }, [navigate]);
+  }, [navigate, user]);
 
   return (
     <div className="flex flex-col min-h-screen">

@@ -19,9 +19,17 @@ const LoginForm = () => {
     try {
       await signIn(email, password);
       
-      // A navegação será tratada pelo efeito no componente Login
-      setIsLoading(false);
+      // After sign in is successful, check user type and navigate accordingly
+      const userType = localStorage.getItem("userType");
+      if (userType === "admin") {
+        navigate("/admin");
+      } else if (userType === "client") {
+        navigate("/agendar");
+      }
+      
     } catch (error) {
+      // Error is already handled by AuthContext
+    } finally {
       setIsLoading(false);
     }
   };
