@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface AuthContextType {
   user: User | null;
@@ -18,6 +19,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Configurar o listener de mudança de estado de autenticação
@@ -31,6 +33,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const isAdmin = session.user.email === "admin@barbearia.com";
           localStorage.setItem("userType", isAdmin ? "admin" : "client");
           localStorage.setItem("userEmail", session.user.email ?? "");
+
+          // Redirecionar após login
+          if (isAdmin) {
+            navigate("/admin");
+          } else {
+            navigate("/agendar");
+          }
         }
       }
     );
@@ -42,8 +51,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
+  // ... resto do código permanece igual
   const signIn = async (email: string, password: string) => {
     try {
       const { error, data: { session } } = await supabase.auth.signInWithPassword({
