@@ -19,7 +19,7 @@ const RegisterForm = () => {
     
     try {
       await signUp(email, password);
-      navigate("/");
+      navigate("/confirmar-email");
     } catch (error) {
       // O erro já será mostrado pelo AuthContext
     } finally {

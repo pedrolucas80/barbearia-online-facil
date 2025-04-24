@@ -1,3 +1,4 @@
+
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -20,7 +21,7 @@ const TimeSelection = ({ onSelect, selectedTime, date, barberId }: TimeSelection
   }, [date, barberId]);
 
   const isTimeDisabled = (time: string) => {
-    if (!date) return true;
+    if (!date || !barberId) return true;
     
     const [hours, minutes] = time.split(":").map(Number);
     const selectedDateTime = new Date(date);
@@ -31,67 +32,56 @@ const TimeSelection = ({ onSelect, selectedTime, date, barberId }: TimeSelection
     return bookedTimes.includes(time) || selectedDateTime < now;
   };
 
-  const getAvailableTimes = (times: string[]) => {
-    return times.filter(time => !isTimeDisabled(time));
-  };
-
-  const availableMorningTimes = getAvailableTimes(morningTimes);
-  const availableAfternoonTimes = getAvailableTimes(afternoonTimes);
-  
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Selecione o Horário</h2>
       
-      {!date || !barberId ? (
-        <p className="text-muted-foreground">
-          Selecione um barbeiro e uma data primeiro
+      <div>
+        <h3 className="text-lg mb-3 text-gray-400">Manhã</h3>
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 mb-6">
+          {morningTimes.map((time) => (
+            <Button
+              key={time}
+              variant={selectedTime === time ? "default" : "outline"}
+              onClick={() => !isTimeDisabled(time) && onSelect(time)}
+              disabled={isTimeDisabled(time)}
+              className={cn(
+                selectedTime === time 
+                  ? "bg-barbearia-yellow text-black hover:bg-amber-400" 
+                  : "border-gray-700 hover:bg-barbearia-dark",
+                isTimeDisabled(time) && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              {time}
+            </Button>
+          ))}
+        </div>
+
+        <h3 className="text-lg mb-3 text-gray-400">Tarde</h3>
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+          {afternoonTimes.map((time) => (
+            <Button
+              key={time}
+              variant={selectedTime === time ? "default" : "outline"}
+              onClick={() => !isTimeDisabled(time) && onSelect(time)}
+              disabled={isTimeDisabled(time)}
+              className={cn(
+                selectedTime === time 
+                  ? "bg-barbearia-yellow text-black hover:bg-amber-400" 
+                  : "border-gray-700 hover:bg-barbearia-dark",
+                isTimeDisabled(time) && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              {time}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {(!date || !barberId) && (
+        <p className="text-sm text-gray-400 mt-4">
+          Selecione um barbeiro e uma data para ver os horários disponíveis
         </p>
-      ) : (
-        <>
-          {availableMorningTimes.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-lg mb-3 text-gray-400">Manhã</h3>
-              <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-                {availableMorningTimes.map((time) => (
-                  <Button
-                    key={time}
-                    variant={selectedTime === time ? "default" : "outline"}
-                    onClick={() => onSelect(time)}
-                    className={cn(
-                      selectedTime === time 
-                        ? "bg-barbearia-yellow text-black hover:bg-amber-400" 
-                        : "border-gray-700 hover:bg-barbearia-dark"
-                    )}
-                  >
-                    {time}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {availableAfternoonTimes.length > 0 && (
-            <div>
-              <h3 className="text-lg mb-3 text-gray-400">Tarde</h3>
-              <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-                {availableAfternoonTimes.map((time) => (
-                  <Button
-                    key={time}
-                    variant={selectedTime === time ? "default" : "outline"}
-                    onClick={() => onSelect(time)}
-                    className={cn(
-                      selectedTime === time 
-                        ? "bg-barbearia-yellow text-black hover:bg-amber-400" 
-                        : "border-gray-700 hover:bg-barbearia-dark"
-                    )}
-                  >
-                    {time}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
       )}
     </div>
   );

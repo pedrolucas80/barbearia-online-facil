@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
-// Chave de acesso para criar uma conta de administrador
 const ADMIN_ACCESS_KEY = "BARBEARIA123";
 
 const AdminLoginForm = () => {
@@ -25,13 +23,16 @@ const AdminLoginForm = () => {
     
     try {
       await signIn(email, password);
+      const userType = localStorage.getItem("userType");
       
-      if (email !== "admin@barbearia.com") {
+      if (userType !== "admin") {
         toast({
           variant: "destructive",
           title: "Acesso negado",
           description: "Esta área é restrita para administradores.",
         });
+        localStorage.removeItem("userType");
+        localStorage.removeItem("userEmail");
         setIsLoading(false);
         return;
       }
@@ -61,7 +62,6 @@ const AdminLoginForm = () => {
     try {
       await signUp(email, password);
       
-      // Após cadastro bem-sucedido, marcar como administrador
       localStorage.setItem("userType", "admin");
       
       toast({

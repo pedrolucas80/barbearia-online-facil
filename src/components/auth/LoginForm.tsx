@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -84,11 +83,16 @@ const LoginForm = () => {
         </Button>
       </form>
 
-      <div className="text-center text-sm">
+      <div className="text-center text-sm space-y-2">
         <p>
           Não tem uma conta?{" "}
           <a href="/cadastrar" className="text-barbearia-yellow hover:underline">
             Cadastre-se
+          </a>
+        </p>
+        <p>
+          <a href="/esqueci-senha" className="text-barbearia-yellow hover:underline">
+            Esqueceu sua senha?
           </a>
         </p>
       </div>
