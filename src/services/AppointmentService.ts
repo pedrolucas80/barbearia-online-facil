@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Appointment {
@@ -18,7 +19,12 @@ export const getAppointments = async (userId: string): Promise<Appointment[]> =>
     .order('date', { ascending: true });
   
   if (error) throw error;
-  return data || [];
+  
+  // Type assertion to ensure status is one of the valid values or undefined
+  return (data || []).map(item => ({
+    ...item,
+    status: (item.status as 'pending' | 'confirmed' | 'canceled' | null) || undefined
+  })) as Appointment[];
 };
 
 export const saveAppointment = async (
@@ -38,7 +44,12 @@ export const saveAppointment = async (
     .single();
   
   if (error) throw error;
-  return data;
+  
+  // Type assertion to ensure we return the correct type
+  return {
+    ...data,
+    status: data.status as 'pending' | 'confirmed' | 'canceled'
+  } as Appointment;
 };
 
 export const cancelAppointment = async (appointmentId: string): Promise<void> => {
