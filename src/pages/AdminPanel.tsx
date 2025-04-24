@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
@@ -12,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getAppointments, getBarberName, getBarbers, confirmAppointment, Appointment } from "@/services/AppointmentService";
+import { getAllAppointments, getBarberName, getBarbers, confirmAppointment, Appointment } from "@/services/AppointmentService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -68,9 +67,8 @@ const AdminPanel = () => {
   const loadAppointments = async () => {
     setIsLoading(true);
     try {
-      // Usando uma ID genérica para admin, deve ser ajustado conforme necessário
-      const adminId = user?.id || "admin";
-      const storedAppointments = await getAppointments(adminId);
+      // Agora usamos getAllAppointments para o admin em vez de getAppointments
+      const storedAppointments = await getAllAppointments();
       
       // Ordenar por data (do mais próximo para o mais distante)
       storedAppointments.sort((a, b) => {

@@ -27,6 +27,22 @@ export const getAppointments = async (userId: string): Promise<Appointment[]> =>
   })) as Appointment[];
 };
 
+// Nova função para carregar todos os agendamentos (para o admin)
+export const getAllAppointments = async (): Promise<Appointment[]> => {
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('*')
+    .order('date', { ascending: true });
+  
+  if (error) throw error;
+  
+  // Type assertion to ensure status is one of the valid values or undefined
+  return (data || []).map(item => ({
+    ...item,
+    status: (item.status as 'pending' | 'confirmed' | 'canceled' | null) || undefined
+  })) as Appointment[];
+};
+
 export const saveAppointment = async (
   userId: string,
   appointment: Pick<Appointment, 'barber_id' | 'date' | 'time'>
