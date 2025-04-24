@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getAppointments, getBarberName, getBarbers, Appointment } from "@/services/AppointmentService";
+import { getAppointments, getBarberName, getBarbers, confirmAppointment, Appointment } from "@/services/AppointmentService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -31,10 +31,20 @@ const AdminPanel = () => {
   const [newPassword, setNewPassword] = useState("");
   const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
   
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, signOut } = useAuth();
+
+  // Update current time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // every minute
+    
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     // Verificar se está logado como admin
@@ -165,6 +175,59 @@ const AdminPanel = () => {
     }, 1000);
   };
 
+  const handleConfirmAppointment = async (appointmentId: string) => {
+    try {
+      await confirmAppointment(appointmentId);
+      toast({
+        title: "Agendamento confirmado",
+        description: "O agendamento foi confirmado com sucesso."
+      });
+      
+      // Atualizar a lista de agendamentos
+      loadAppointments();
+    } catch (error) {
+      console.error("Error confirming appointment:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível confirmar o agendamento."
+      });
+    }
+  };
+
+  const canConfirmAppointment = (appointment: Appointment) => {
+    if (appointment.status !== 'pending') return false;
+    
+    const now = currentTime;
+    const appointmentDate = new Date(appointment.date + 'T' + appointment.time);
+    
+    // Can confirm if current time is equal or after the appointment time
+    return now >= appointmentDate;
+  };
+
+  const getAppointmentStatus = (appointment: Appointment) => {
+    if (appointment.status === 'canceled') return "Cancelado";
+    if (appointment.status === 'confirmed') return "Confirmado";
+    
+    const appointmentDate = new Date(appointment.date);
+    const isPast = appointmentDate.getTime() < Date.now();
+    
+    if (isPast) return "Concluído";
+    return "Agendado";
+  };
+
+  const getStatusClass = (appointment: Appointment) => {
+    if (appointment.status === 'canceled') return "bg-red-500/20 text-red-400";
+    if (appointment.status === 'confirmed') return "bg-green-500/20 text-green-400";
+    
+    const appointmentDate = new Date(appointment.date);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const isPast = appointmentDate < now;
+    
+    return isPast ? "bg-gray-600 text-gray-200" : "bg-green-500/20 text-green-400";
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -216,30 +279,43 @@ const AdminPanel = () => {
                           <TableHead className="text-gray-300">Data</TableHead>
                           <TableHead className="text-gray-300">Horário</TableHead>
                           <TableHead className="text-gray-300">Status</TableHead>
+                          <TableHead className="text-gray-300">Ações</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredAppointments.map((appointment) => {
-                          const appointmentDate = new Date(appointment.date);
-                          const isPast = appointmentDate.getTime() < Date.now();
+                          const canConfirm = canConfirmAppointment(appointment);
                           
                           return (
                             <TableRow key={appointment.id}>
                               <TableCell className="font-mono">
-                                {appointment.id.substring(0, 8).toUpperCase()}
+                                {appointment.code || appointment.id.substring(0, 8).toUpperCase()}
                               </TableCell>
                               <TableCell>{getCliente(appointment.user_id)}</TableCell>
                               <TableCell>{getBarberName(appointment.barber_id)}</TableCell>
                               <TableCell>{formatDate(appointment.date)}</TableCell>
                               <TableCell>{appointment.time}</TableCell>
                               <TableCell>
-                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                  isPast 
-                                    ? "bg-gray-600 text-gray-200" 
-                                    : "bg-green-500/20 text-green-400"
-                                }`}>
-                                  {isPast ? "Concluído" : "Agendado"}
+                                <span className={`px-2 py-1 rounded-full text-xs ${getStatusClass(appointment)}`}>
+                                  {getAppointmentStatus(appointment)}
                                 </span>
+                              </TableCell>
+                              <TableCell>
+                                {appointment.status === 'pending' && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleConfirmAppointment(appointment.id)}
+                                    disabled={!canConfirm}
+                                    className={
+                                      canConfirm 
+                                        ? "border-green-500 text-green-500 hover:bg-green-500 hover:text-black" 
+                                        : "border-gray-600 text-gray-600"
+                                    }
+                                  >
+                                    Confirmar
+                                  </Button>
+                                )}
                               </TableCell>
                             </TableRow>
                           );

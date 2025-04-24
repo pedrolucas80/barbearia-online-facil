@@ -8,6 +8,7 @@ export interface Appointment {
   date: string;
   time: string;
   code: string;
+  status?: 'pending' | 'confirmed' | 'canceled';
 }
 
 export const getAppointments = async (userId: string): Promise<Appointment[]> => {
@@ -31,7 +32,8 @@ export const saveAppointment = async (
       user_id: userId,
       barber_id: appointment.barber_id,
       date: appointment.date,
-      time: appointment.time
+      time: appointment.time,
+      status: 'pending'
     })
     .select()
     .single();
@@ -40,15 +42,36 @@ export const saveAppointment = async (
   return data;
 };
 
+export const cancelAppointment = async (appointmentId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('appointments')
+    .update({ status: 'canceled' })
+    .eq('id', appointmentId);
+  
+  if (error) throw error;
+};
+
+export const confirmAppointment = async (appointmentId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('appointments')
+    .update({ status: 'confirmed' })
+    .eq('id', appointmentId);
+  
+  if (error) throw error;
+};
+
 export const getBookedTimes = async (date: Date, barberId: string): Promise<string[]> => {
+  const formattedDate = date.toISOString().split('T')[0];
+  
   const { data, error } = await supabase
     .from('appointments')
     .select('time')
     .eq('barber_id', barberId)
-    .eq('date', date.toISOString().split('T')[0]);
+    .eq('date', formattedDate)
+    .not('status', 'eq', 'canceled');
   
   if (error) throw error;
-  return data.map(app => app.time);
+  return data?.map(app => app.time) || [];
 };
 
 export const getBarbers = () => {
