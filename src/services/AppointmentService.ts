@@ -1,46 +1,54 @@
 
-// Serviço para gerenciar agendamentos
+import { supabase } from "@/integrations/supabase/client";
 
 export interface Appointment {
   id: string;
-  clientEmail: string;
-  barberId: string;
+  user_id: string;
+  barber_id: string;
   date: string;
   time: string;
+  code: string;
 }
 
-export const getAppointments = (): Appointment[] => {
-  return JSON.parse(localStorage.getItem("appointments") || "[]");
+export const getAppointments = async (userId: string): Promise<Appointment[]> => {
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('*')
+    .eq('user_id', userId)
+    .order('date', { ascending: true });
+  
+  if (error) throw error;
+  return data || [];
 };
 
-export const saveAppointment = (appointment: Omit<Appointment, "id">): Appointment => {
-  const appointments = getAppointments();
-  
-  const newAppointment = {
-    ...appointment,
-    id: Date.now().toString(),
-  };
-  
-  appointments.push(newAppointment);
-  localStorage.setItem("appointments", JSON.stringify(appointments));
-  
-  return newAppointment;
-};
-
-export const getBookedTimes = (date: Date, barberId: string): string[] => {
-  const appointments = getAppointments();
-  
-  return appointments
-    .filter(appointment => {
-      const appointmentDate = new Date(appointment.date);
-      return (
-        appointmentDate.getDate() === date.getDate() &&
-        appointmentDate.getMonth() === date.getMonth() &&
-        appointmentDate.getFullYear() === date.getFullYear() &&
-        appointment.barberId === barberId
-      );
+export const saveAppointment = async (
+  userId: string,
+  appointment: Pick<Appointment, 'barber_id' | 'date' | 'time'>
+): Promise<Appointment> => {
+  const { data, error } = await supabase
+    .from('appointments')
+    .insert({
+      user_id: userId,
+      barber_id: appointment.barber_id,
+      date: appointment.date,
+      time: appointment.time
     })
-    .map(appointment => appointment.time);
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return data;
+};
+
+export const getBookedTimes = async (date: Date, barberId: string): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('time')
+    .eq('barber_id', barberId)
+    .eq('date', date.toISOString().split('T')[0]);
+  
+  if (error) throw error;
+  return data.map(app => app.time);
 };
 
 export const getBarbers = () => {
@@ -54,17 +62,4 @@ export const getBarberName = (barberId: string): string => {
   const barbers = getBarbers();
   const barber = barbers.find(b => b.id === barberId);
   return barber ? barber.name : "Barbeiro Desconhecido";
-};
-
-export const initializeAppData = () => {
-  // Verificar se já temos dados iniciais
-  if (!localStorage.getItem("dataInitialized")) {
-    // Criar conta admin padrão
-    localStorage.setItem("adminCredentials", JSON.stringify({
-      email: "admin@barbearia.com",
-      password: "admin123"
-    }));
-    
-    localStorage.setItem("dataInitialized", "true");
-  }
 };

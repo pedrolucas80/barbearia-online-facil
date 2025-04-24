@@ -2,20 +2,21 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CalendarClock } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import ProfileAvatar from "@/components/ProfileAvatar";
 
 const Header = () => {
   const [userType, setUserType] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     const storedUserType = localStorage.getItem("userType");
     setUserType(storedUserType);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("userType");
-    localStorage.removeItem("userEmail");
+  const handleLogout = async () => {
+    await signOut();
     navigate("/");
   };
 
@@ -27,7 +28,7 @@ const Header = () => {
         </Link>
       </div>
 
-      {userType && (
+      {user && (
         <div className="flex items-center gap-4">
           {userType === "admin" ? (
             <span className="text-sm text-gray-300">Admin</span>
@@ -45,19 +46,19 @@ const Header = () => {
               >
                 Meus Agendamentos
               </Link>
-              <span className="text-sm text-gray-300">
-                {localStorage.getItem("userEmail")}
-              </span>
             </div>
           )}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleLogout}
-            className="border-barbearia-yellow text-barbearia-yellow hover:bg-barbearia-yellow hover:text-black"
-          >
-            Sair
-          </Button>
+          <div className="flex items-center gap-3">
+            {user && <ProfileAvatar user={user} size="sm" />}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleLogout}
+              className="border-barbearia-yellow text-barbearia-yellow hover:bg-barbearia-yellow hover:text-black"
+            >
+              Sair
+            </Button>
+          </div>
         </div>
       )}
     </header>
