@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { saveAppointment } from "@/services/AppointmentService";
 import AppointmentPreview from "@/components/scheduling/AppointmentPreview";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Scheduling = () => {
   const [selectedBarber, setSelectedBarber] = useState<string | null>(null);
@@ -17,17 +19,17 @@ const Scheduling = () => {
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     // Verificar autenticação
-    const userType = localStorage.getItem("userType");
-    if (!userType) {
+    if (!user) {
       navigate("/");
     }
-  }, [navigate]);
+  }, [navigate, user]);
 
-  const handleConfirmAppointment = () => {
-    if (!selectedBarber || !selectedDate || !selectedTime) {
+  const handleConfirmAppointment = async () => {
+    if (!selectedBarber || !selectedDate || !selectedTime || !user) {
       toast({
         variant: "destructive",
         title: "Erro",
@@ -38,39 +40,33 @@ const Scheduling = () => {
 
     setIsSubmitting(true);
 
-    // Simular processamento e salvar
-    setTimeout(() => {
-      try {
-        // Obter dados do cliente
-        const userEmail = localStorage.getItem("userEmail");
-        
-        // Criar e salvar novo agendamento
-        saveAppointment({
-          clientEmail: userEmail || "cliente@exemplo.com",
-          barberId: selectedBarber,
-          date: selectedDate.toISOString(),
-          time: selectedTime,
-        });
-        
-        toast({
-          title: "Agendamento confirmado com sucesso!",
-          description: `Seu horário está marcado para ${selectedTime} no dia ${selectedDate.toLocaleDateString('pt-BR')}`,
-        });
-        
-        // Reiniciar estado
-        setSelectedBarber(null);
-        setSelectedDate(null);
-        setSelectedTime(null);
-      } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "Erro ao agendar",
-          description: "Houve um problema ao salvar seu agendamento. Tente novamente.",
-        });
-      }
+    try {
+      // Criar e salvar novo agendamento
+      await saveAppointment(user.id, {
+        barber_id: selectedBarber,
+        date: selectedDate.toISOString().split('T')[0],
+        time: selectedTime,
+      });
       
+      toast({
+        title: "Agendamento confirmado com sucesso!",
+        description: `Seu horário está marcado para ${selectedTime} no dia ${selectedDate.toLocaleDateString('pt-BR')}`,
+      });
+      
+      // Reiniciar estado
+      setSelectedBarber(null);
+      setSelectedDate(null);
+      setSelectedTime(null);
+    } catch (error) {
+      console.error("Error saving appointment:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao agendar",
+        description: "Houve um problema ao salvar seu agendamento. Tente novamente.",
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
 
   return (

@@ -55,10 +55,12 @@ const AdminPanel = () => {
   }, [navigate]);
 
   // Carregar agendamentos
-  const loadAppointments = () => {
+  const loadAppointments = async () => {
     setIsLoading(true);
-    setTimeout(() => {
-      const storedAppointments = getAppointments();
+    try {
+      // Usando uma ID genérica para admin, deve ser ajustado conforme necessário
+      const adminId = user?.id || "admin";
+      const storedAppointments = await getAppointments(adminId);
       
       // Ordenar por data (do mais próximo para o mais distante)
       storedAppointments.sort((a, b) => {
@@ -69,8 +71,16 @@ const AdminPanel = () => {
       
       setAppointments(storedAppointments);
       setFilteredAppointments(storedAppointments);
+    } catch (error) {
+      console.error("Error loading appointments:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível carregar os agendamentos."
+      });
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   // Função para converter horário em minutos para ordenação
@@ -84,13 +94,13 @@ const AdminPanel = () => {
     if (selectedBarberId === "all") {
       setFilteredAppointments(appointments);
     } else {
-      setFilteredAppointments(appointments.filter(app => app.barberId === selectedBarberId));
+      setFilteredAppointments(appointments.filter(app => app.barber_id === selectedBarberId));
     }
   }, [selectedBarberId, appointments]);
 
-  const getCliente = (email: string) => {
-    // Para este MVP, usamos apenas o email para identificar o cliente
-    return email.split("@")[0];
+  const getCliente = (userId: string) => {
+    // Para este MVP, usamos apenas o ID do usuário
+    return userId.substring(0, 8);
   };
 
   const formatDate = (dateString: string) => {
@@ -218,8 +228,8 @@ const AdminPanel = () => {
                               <TableCell className="font-mono">
                                 {appointment.id.substring(0, 8).toUpperCase()}
                               </TableCell>
-                              <TableCell>{getCliente(appointment.clientEmail)}</TableCell>
-                              <TableCell>{getBarberName(appointment.barberId)}</TableCell>
+                              <TableCell>{getCliente(appointment.user_id)}</TableCell>
+                              <TableCell>{getBarberName(appointment.barber_id)}</TableCell>
                               <TableCell>{formatDate(appointment.date)}</TableCell>
                               <TableCell>{appointment.time}</TableCell>
                               <TableCell>

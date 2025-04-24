@@ -6,29 +6,27 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getAppointments, getBarberName, Appointment } from "@/services/AppointmentService";
+import { useAuth } from "@/contexts/AuthContext";
 
 const MyAppointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     // Verificar se o usuário está autenticado
-    const userEmail = localStorage.getItem("userEmail");
-    if (!userEmail) {
+    if (!user) {
       navigate("/");
       return;
     }
 
     // Carregar agendamentos do usuário
-    const loadAppointments = () => {
+    const loadAppointments = async () => {
       setIsLoading(true);
-      setTimeout(() => {
-        const allAppointments = getAppointments();
-        const userAppointments = allAppointments.filter(
-          (appointment) => appointment.clientEmail === userEmail
-        );
+      try {
+        const userAppointments = await getAppointments(user.id);
         
         // Ordenar por data (do mais recente para o mais antigo)
         userAppointments.sort((a, b) => {
@@ -38,12 +36,20 @@ const MyAppointments = () => {
         });
         
         setAppointments(userAppointments);
+      } catch (error) {
+        console.error("Error loading appointments:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Não foi possível carregar seus agendamentos."
+        });
+      } finally {
         setIsLoading(false);
-      }, 500);
+      }
     };
 
     loadAppointments();
-  }, [navigate]);
+  }, [navigate, user, toast]);
 
   // Função para converter horário em minutos para ordenação
   const getTimeInMinutes = (time: string) => {
@@ -113,7 +119,7 @@ const MyAppointments = () => {
                           <span className="font-medium">Horário:</span> {appointment.time}
                         </p>
                         <p className="text-gray-300">
-                          <span className="font-medium">Barbeiro:</span> {getBarberName(appointment.barberId)}
+                          <span className="font-medium">Barbeiro:</span> {getBarberName(appointment.barber_id)}
                         </p>
                       </div>
                     </div>

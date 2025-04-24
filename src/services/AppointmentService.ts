@@ -63,3 +63,11 @@ export const getBarberName = (barberId: string): string => {
   const barber = barbers.find(b => b.id === barberId);
   return barber ? barber.name : "Barbeiro Desconhecido";
 };
+
+// Add the missing initializeAppData function that's being imported in main.tsx
+export const initializeAppData = (): void => {
+  // This function is called when the app starts
+  // Currently it doesn't need to do anything specific, but it's required
+  // because it's imported in main.tsx
+  console.log("Appointment service initialized");
+};

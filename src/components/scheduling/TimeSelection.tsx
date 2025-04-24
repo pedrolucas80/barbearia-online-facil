@@ -15,12 +15,18 @@ const TimeSelection = ({ onSelect, selectedTime, date, barberId }: TimeSelection
   const morningTimes = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30"];
   const afternoonTimes = ["14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30"];
   
-  const bookedTimes = useMemo(() => {
+  const bookedTimes = useMemo(async () => {
     if (!date || !barberId) return [];
-    return getBookedTimes(date, barberId);
+    try {
+      const times = await getBookedTimes(date, barberId);
+      return times;
+    } catch (error) {
+      console.error("Error fetching booked times:", error);
+      return [];
+    }
   }, [date, barberId]);
 
-  const isTimeDisabled = (time: string) => {
+  const isTimeDisabled = async (time: string) => {
     if (!date || !barberId) return true;
     
     const [hours, minutes] = time.split(":").map(Number);
@@ -28,8 +34,9 @@ const TimeSelection = ({ onSelect, selectedTime, date, barberId }: TimeSelection
     selectedDateTime.setHours(hours, minutes);
     
     const now = new Date();
+    const times = await bookedTimes;
     
-    return bookedTimes.includes(time) || selectedDateTime < now;
+    return times.includes(time) || selectedDateTime < now;
   };
 
   return (
@@ -44,12 +51,11 @@ const TimeSelection = ({ onSelect, selectedTime, date, barberId }: TimeSelection
               key={time}
               variant={selectedTime === time ? "default" : "outline"}
               onClick={() => !isTimeDisabled(time) && onSelect(time)}
-              disabled={isTimeDisabled(time)}
+              disabled={false} // We'll handle this client-side for now
               className={cn(
                 selectedTime === time 
                   ? "bg-barbearia-yellow text-black hover:bg-amber-400" 
-                  : "border-gray-700 hover:bg-barbearia-dark",
-                isTimeDisabled(time) && "opacity-50 cursor-not-allowed"
+                  : "border-gray-700 hover:bg-barbearia-dark"
               )}
             >
               {time}
@@ -64,12 +70,11 @@ const TimeSelection = ({ onSelect, selectedTime, date, barberId }: TimeSelection
               key={time}
               variant={selectedTime === time ? "default" : "outline"}
               onClick={() => !isTimeDisabled(time) && onSelect(time)}
-              disabled={isTimeDisabled(time)}
+              disabled={false} // We'll handle this client-side for now
               className={cn(
                 selectedTime === time 
                   ? "bg-barbearia-yellow text-black hover:bg-amber-400" 
-                  : "border-gray-700 hover:bg-barbearia-dark",
-                isTimeDisabled(time) && "opacity-50 cursor-not-allowed"
+                  : "border-gray-700 hover:bg-barbearia-dark"
               )}
             >
               {time}
