@@ -5,7 +5,7 @@ import Header from "@/components/layout/Header";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { getAppointments, getBarberName, cancelAppointment, Appointment } from "@/services/AppointmentService";
+import { getAppointments, getBarberName, cancelAppointment, Appointment, getBarbers, Barber } from "@/services/AppointmentService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { 
@@ -18,39 +18,37 @@ import {
   AlertDialogHeader, 
   AlertDialogTitle 
 } from "@/components/ui/alert-dialog";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 
 const MyAppointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [filter, setFilter] = useState<"all" | "canceled" | "done" | "scheduled">("all"); // Filtro novo
+  const [barbers, setBarbers] = useState<Barber[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
 
   useEffect(() => {
-    // Verificar se o usuário está autenticado
     if (!user) {
       navigate("/");
       return;
     }
-
-    // Carregar agendamentos do usuário
     loadAppointments();
-  }, [navigate, user, toast]);
+    loadBarbers();
+  }, [navigate, user]);
 
   const loadAppointments = async () => {
     setIsLoading(true);
     try {
       const userAppointments = await getAppointments(user?.id || '');
-      
-      // Ordenar por data (do mais recente para o mais antigo)
       userAppointments.sort((a, b) => {
         const dateA = new Date(a.date).getTime() + getTimeInMinutes(a.time);
         const dateB = new Date(b.date).getTime() + getTimeInMinutes(b.time);
         return dateA - dateB;
       });
-      
       setAppointments(userAppointments);
     } catch (error) {
       console.error("Error loading appointments:", error);
@@ -64,9 +62,22 @@ const MyAppointments = () => {
     }
   };
 
+  const loadBarbers = async () => {
+    try {
+      const barbersList = await getBarbers();
+      setBarbers(barbersList);
+    } catch (error) {
+      console.error("Error loading barbers:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível carregar os barbeiros."
+      });
+    }
+  };
+
   const handleCancelAppointment = async () => {
     if (!appointmentToCancel) return;
-    
     setIsCancelling(true);
     try {
       await cancelAppointment(appointmentToCancel.id);
@@ -74,8 +85,6 @@ const MyAppointments = () => {
         title: "Agendamento cancelado",
         description: "Seu agendamento foi cancelado com sucesso."
       });
-      
-      // Atualizar a lista de agendamentos
       loadAppointments();
     } catch (error) {
       console.error("Error cancelling appointment:", error);
@@ -90,7 +99,6 @@ const MyAppointments = () => {
     }
   };
 
-  // Função para converter horário em minutos para ordenação
   const getTimeInMinutes = (time: string) => {
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;
@@ -104,33 +112,49 @@ const MyAppointments = () => {
   // Verifica se o agendamento pode ser cancelado (antes da data e hora)
   const canCancel = (appointment: Appointment) => {
     if (appointment.status === 'canceled') return false;
-    
     const appointmentDateTime = new Date(`${appointment.date}T${appointment.time}`);
     const now = new Date();
     return appointmentDateTime > now;
   };
 
   const isPast = (appointment: Appointment) => {
-    const appointmentDate = new Date(appointment.date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return appointmentDate < today;
+    const appointmentDateTime = new Date(`${appointment.date}T${appointment.time}`);
+    const now = new Date();
+    return appointmentDateTime < now;
   };
 
   const getAppointmentStatus = (appointment: Appointment) => {
     if (appointment.status === 'canceled') return "Cancelado";
-    if (appointment.status === 'confirmed') return "Confirmado";
-    
     if (isPast(appointment)) return "Concluído";
     return "Agendado";
   };
 
   const getStatusColor = (appointment: Appointment) => {
-    if (appointment.status === 'canceled') return "bg-red-500/20 text-red-400";
-    if (appointment.status === 'confirmed') return "bg-green-500/20 text-green-400";
-    
-    if (isPast(appointment)) return "bg-gray-600 text-gray-200";
-    return "bg-green-500/20 text-green-400";
+    const status = getAppointmentStatus(appointment);
+    switch (status) {
+      case "Cancelado":
+        return "bg-red-500/20 text-red-400";
+      case "Concluído":
+        return "bg-gray-600 text-gray-200";
+      case "Agendado":
+      default:
+        return "bg-green-500/20 text-green-400";
+    }
+  };
+
+  // Filtro dos agendamentos
+  const filteredAppointments = appointments.filter(app => {
+    if (filter === "all") return true;
+    if (filter === "canceled") return app.status === "canceled";
+    if (filter === "done") return app.status !== "canceled" && isPast(app);
+    if (filter === "scheduled") return app.status !== "canceled" && !isPast(app);
+    return true;
+  });
+
+  // Busca nome do barbeiro (agora corretamente, usando cache)
+  const getBarberNameById = (barberId: string) => {
+    const barber = barbers.find(b => b.id === barberId);
+    return barber ? barber.name : "Barbeiro Desconhecido";
   };
 
   return (
@@ -139,13 +163,33 @@ const MyAppointments = () => {
       <main className="flex-1 p-6">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold mb-8 text-center">Meus Agendamentos</h1>
-          
+          <div className="flex justify-end mb-4">
+            <Select
+              value={filter}
+              onValueChange={(val) => setFilter(val as typeof filter)}
+            >
+              <SelectTrigger className="w-56 bg-barbearia-card text-white border-barbearia-yellow">
+                <SelectValue>
+                  {filter === "all" && "Todos"}
+                  {filter === "canceled" && "Cancelados"}
+                  {filter === "done" && "Concluídos"}
+                  {filter === "scheduled" && "Agendados"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="canceled">Cancelados</SelectItem>
+                <SelectItem value="done">Concluídos</SelectItem>
+                <SelectItem value="scheduled">Agendados</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="bg-barbearia-card rounded-lg shadow-lg p-6">
             {isLoading ? (
               <p className="text-center py-4">Carregando seus agendamentos...</p>
-            ) : appointments.length === 0 ? (
+            ) : filteredAppointments.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-lg text-gray-400">Você ainda não possui agendamentos.</p>
+                <p className="text-lg text-gray-400">Nenhum agendamento encontrado.</p>
                 <button 
                   onClick={() => navigate("/agendar")}
                   className="mt-4 inline-flex items-center px-4 py-2 bg-barbearia-yellow text-black rounded-md hover:bg-amber-400 transition-colors"
@@ -155,9 +199,8 @@ const MyAppointments = () => {
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
-                {appointments.map((appointment) => {
+                {filteredAppointments.map((appointment) => {
                   const showCancelButton = canCancel(appointment);
-                  
                   return (
                     <div 
                       key={appointment.id}
@@ -191,7 +234,7 @@ const MyAppointments = () => {
                           <span className="font-medium">Horário:</span> {appointment.time}
                         </p>
                         <p className="text-gray-300">
-                          <span className="font-medium">Barbeiro:</span> {getBarberName(appointment.barber_id)}
+                          <span className="font-medium">Barbeiro:</span> {getBarberNameById(appointment.barber_id)}
                         </p>
                       </div>
 
