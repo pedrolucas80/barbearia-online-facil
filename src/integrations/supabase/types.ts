@@ -45,6 +45,24 @@ export type Database = {
         }
         Relationships: []
       }
+      barbers: {
+        Row: {
+          active: boolean
+          id: string
+          name: string
+        }
+        Insert: {
+          active?: boolean
+          id: string
+          name: string
+        }
+        Update: {
+          active?: boolean
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

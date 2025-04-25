@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getAllAppointments, getBarberName, getBarbers, confirmAppointment, Appointment } from "@/services/AppointmentService";
+import { getAllAppointments, getBarberName, getBarbers, setBarberActiveStatus, confirmAppointment, Appointment, Barber } from "@/services/AppointmentService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -31,12 +31,12 @@ const AdminPanel = () => {
   const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  
+  const [barbers, setBarbers] = useState<Barber[]>([]);
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, signOut } = useAuth();
 
-  // Update current time every minute
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -46,31 +46,26 @@ const AdminPanel = () => {
   }, []);
 
   useEffect(() => {
-    // Verificar se está logado como admin
     const userType = localStorage.getItem("userType");
     if (userType !== "admin") {
       navigate("/");
       return;
     }
 
-    // Inicializar o email para o atual
     const userEmail = localStorage.getItem("userEmail");
     if (userEmail) {
       setNewEmail(userEmail);
     }
 
-    // Carregar agendamentos
     loadAppointments();
+    loadBarbers();
   }, [navigate]);
 
-  // Carregar agendamentos
   const loadAppointments = async () => {
     setIsLoading(true);
     try {
-      // Agora usamos getAllAppointments para o admin em vez de getAppointments
       const storedAppointments = await getAllAppointments();
       
-      // Ordenar por data (do mais próximo para o mais distante)
       storedAppointments.sort((a, b) => {
         const dateA = new Date(a.date).getTime() + getTimeInMinutes(a.time);
         const dateB = new Date(b.date).getTime() + getTimeInMinutes(b.time);
@@ -91,13 +86,20 @@ const AdminPanel = () => {
     }
   };
 
-  // Função para converter horário em minutos para ordenação
+  const loadBarbers = async () => {
+    try {
+      const data = await getBarbers();
+      setBarbers(data);
+    } catch {
+      setBarbers([]);
+    }
+  };
+
   const getTimeInMinutes = (time: string) => {
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;
   };
 
-  // Filtrar agendamentos quando mudar o barbeiro selecionado
   useEffect(() => {
     if (selectedBarberId === "all") {
       setFilteredAppointments(appointments);
@@ -107,7 +109,6 @@ const AdminPanel = () => {
   }, [selectedBarberId, appointments]);
 
   const getCliente = (userId: string) => {
-    // Para este MVP, usamos apenas o ID do usuário
     return userId.substring(0, 8);
   };
 
@@ -128,7 +129,6 @@ const AdminPanel = () => {
 
     setIsUpdatingEmail(true);
     setTimeout(() => {
-      // Em uma aplicação real, usaria o Supabase para atualizar o email
       localStorage.setItem("userEmail", newEmail);
       
       toast({
@@ -161,7 +161,6 @@ const AdminPanel = () => {
 
     setIsUpdatingPassword(true);
     setTimeout(() => {
-      // Em uma aplicação real, usaria o Supabase para atualizar a senha
       toast({
         title: "Senha atualizada com sucesso!",
         description: "Sua nova senha foi salva."
@@ -181,7 +180,6 @@ const AdminPanel = () => {
         description: "O agendamento foi confirmado com sucesso."
       });
       
-      // Atualizar a lista de agendamentos
       loadAppointments();
     } catch (error) {
       console.error("Error confirming appointment:", error);
@@ -199,7 +197,6 @@ const AdminPanel = () => {
     const now = currentTime;
     const appointmentDate = new Date(appointment.date + 'T' + appointment.time);
     
-    // Can confirm if current time is equal or after the appointment time
     return now >= appointmentDate;
   };
 
@@ -226,6 +223,21 @@ const AdminPanel = () => {
     return isPast ? "bg-gray-600 text-gray-200" : "bg-green-500/20 text-green-400";
   };
 
+  const handleToggleBarberActive = async (barber: Barber) => {
+    try {
+      await setBarberActiveStatus(barber.id, !barber.active);
+      toast({
+        title: `Barbeiro ${!barber.active ? "ativado" : "desativado"} com sucesso!`
+      });
+      loadBarbers();
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar barbeiro"
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -237,6 +249,7 @@ const AdminPanel = () => {
             <div className="flex justify-center mb-6">
               <TabsList className="bg-barbearia-dark">
                 <TabsTrigger value="appointments">Agendamentos</TabsTrigger>
+                <TabsTrigger value="barbers">Barbeiros</TabsTrigger>
                 <TabsTrigger value="account">Conta</TabsTrigger>
               </TabsList>
             </div>
@@ -322,6 +335,33 @@ const AdminPanel = () => {
                     </Table>
                   </div>
                 )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="barbers">
+              <div className="bg-barbearia-card rounded-lg shadow-lg p-6 mb-6">
+                <h2 className="text-xl font-semibold mb-6">Barbeiros</h2>
+                <div className="space-y-4">
+                  {barbers.length === 0 && (
+                    <div className="text-gray-400">Nenhum barbeiro cadastrado.</div>
+                  )}
+                  {barbers.map((barber) => (
+                    <div key={barber.id} className={`flex items-center justify-between px-4 py-3 rounded bg-barbearia-dark`}>
+                      <span className={`font-medium ${!barber.active ? "opacity-60" : ""}`}>{barber.name}</span>
+                      <Button
+                        variant={barber.active ? "default" : "outline"}
+                        className={
+                          barber.active
+                            ? "bg-green-500 text-white hover:bg-green-600"
+                            : "border-gray-500 text-gray-400 hover:bg-gray-600"
+                        }
+                        onClick={() => handleToggleBarberActive(barber)}
+                      >
+                        {barber.active ? "Ativo" : "Desativado"}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </TabsContent>
             

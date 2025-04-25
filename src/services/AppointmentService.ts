@@ -11,6 +11,12 @@ export interface Appointment {
   status?: 'pending' | 'confirmed' | 'canceled';
 }
 
+export interface Barber {
+  id: string;
+  name: string;
+  active: boolean;
+}
+
 export const getAppointments = async (userId: string): Promise<Appointment[]> => {
   const { data, error } = await supabase
     .from('appointments')
@@ -20,14 +26,13 @@ export const getAppointments = async (userId: string): Promise<Appointment[]> =>
   
   if (error) throw error;
   
-  // Type assertion to ensure status is one of the valid values or undefined
   return (data || []).map(item => ({
     ...item,
     status: (item.status as 'pending' | 'confirmed' | 'canceled' | null) || undefined
   })) as Appointment[];
 };
 
-// Nova função para carregar todos os agendamentos (para o admin)
+// Função para carregar todos os agendamentos (para o admin)
 export const getAllAppointments = async (): Promise<Appointment[]> => {
   const { data, error } = await supabase
     .from('appointments')
@@ -36,7 +41,6 @@ export const getAllAppointments = async (): Promise<Appointment[]> => {
   
   if (error) throw error;
   
-  // Type assertion to ensure status is one of the valid values or undefined
   return (data || []).map(item => ({
     ...item,
     status: (item.status as 'pending' | 'confirmed' | 'canceled' | null) || undefined
@@ -61,7 +65,6 @@ export const saveAppointment = async (
   
   if (error) throw error;
   
-  // Type assertion to ensure we return the correct type
   return {
     ...data,
     status: data.status as 'pending' | 'confirmed' | 'canceled'
@@ -100,17 +103,32 @@ export const getBookedTimes = async (date: Date, barberId: string): Promise<stri
   return data?.map(app => app.time) || [];
 };
 
-export const getBarbers = () => {
-  return [
-    { id: "1", name: "Barbeiro 1" },
-    { id: "2", name: "Barbeiro 2" }
-  ];
+// Nova função: buscar barbeiros do Supabase
+export const getBarbers = async (): Promise<Barber[]> => {
+  const { data, error } = await supabase
+    .from('barbers')
+    .select('*')
+    .order('name', { ascending: true });
+  if (error) throw error;
+  return data as Barber[];
 };
 
-export const getBarberName = (barberId: string): string => {
-  const barbers = getBarbers();
-  const barber = barbers.find(b => b.id === barberId);
-  return barber ? barber.name : "Barbeiro Desconhecido";
+// Atualizar status do barbeiro (admin)
+export const setBarberActiveStatus = async (barberId: string, active: boolean) => {
+  const { error } = await supabase
+    .from('barbers')
+    .update({ active })
+    .eq('id', barberId);
+  if (error) throw error;
+};
+
+// Buscar nome do barbeiro (buscando em cache dos barbers, ou retornar id)
+export const getBarberName = (barberId: string, barbers?: Barber[]): string => {
+  if (barbers) {
+    const barber = barbers.find(b => b.id === barberId);
+    return barber ? barber.name : "Barbeiro Desconhecido";
+  }
+  return "Barbeiro Desconhecido";
 };
 
 export const initializeAppData = (): void => {

@@ -96,20 +96,6 @@ const LoginForm = () => {
           </a>
         </p>
       </div>
-      
-      <div className="pt-6 border-t border-barbearia-dark">
-        <div className="text-center mb-4">
-          <h2 className="text-lg font-medium">Área Administrativa</h2>
-          <p className="text-sm text-gray-400">Acesso restrito para administradores do sistema</p>
-        </div>
-        <Button 
-          variant="outline" 
-          className="w-full border-barbearia-yellow text-barbearia-yellow hover:bg-barbearia-yellow hover:text-black"
-          onClick={handleAdminAccess}
-        >
-          Acessar Painel Administrativo
-        </Button>
-      </div>
     </div>
   );
 };
