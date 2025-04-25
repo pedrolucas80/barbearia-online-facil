@@ -266,7 +266,7 @@ const AdminPanel = () => {
                       className="bg-barbearia-dark border border-barbearia-dark rounded px-3 py-2 text-white"
                     >
                       <option value="all">Todos os barbeiros</option>
-                      {getBarbers().map(barber => (
+                      {barbers.map(barber => (
                         <option key={barber.id} value={barber.id}>
                           {barber.name}
                         </option>
