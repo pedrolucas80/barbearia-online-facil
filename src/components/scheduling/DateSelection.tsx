@@ -29,9 +29,25 @@ const DateSelection = ({ onSelect, selectedDate }: DateSelectionProps) => {
   const startingDayOfWeek = getDay(startOfMonth(currentMonth));
   
   const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+  const isDateDisabled = (date: Date): boolean => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinutes = now.getMinutes();
+    
+    // Se for o dia atual e depois das 18:30, desabilita o dia
+    if (isToday(date) && (currentHour > 18 || (currentHour === 18 && currentMinutes >= 30))) {
+      return true;
+    }
+    
+    // Desabilita dias passados
+    return isBefore(date, now) && !isToday(date);
+  };
   
   const handleSelectDate = (date: Date) => {
-    onSelect(date);
+    if (!isDateDisabled(date)) {
+      onSelect(date);
+    }
   };
   
   return (
@@ -80,16 +96,16 @@ const DateSelection = ({ onSelect, selectedDate }: DateSelectionProps) => {
               date.getMonth() === selectedDate.getMonth() &&
               date.getFullYear() === selectedDate.getFullYear();
             
-            const isPast = isBefore(date, new Date()) && !isToday(date);
+            const disabled = isDateDisabled(date);
             
             return (
               <Button
                 key={date.toString()}
-                onClick={() => !isPast && handleSelectDate(date)}
-                disabled={isPast}
+                onClick={() => handleSelectDate(date)}
+                disabled={disabled}
                 className={cn(
                   "h-10 p-0 rounded-full",
-                  isPast ? "opacity-50 cursor-not-allowed" : "",
+                  disabled ? "opacity-50 cursor-not-allowed" : "",
                   isSelected ? "bg-[#8E3D0F] text-white hover:bg-[#8E3D0F]/90" : "hover:bg-barbearia-dark"
                 )}
               >

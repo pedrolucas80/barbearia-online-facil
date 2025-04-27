@@ -47,7 +47,7 @@ const MyAppointments = () => {
       userAppointments.sort((a, b) => {
         const dateA = new Date(a.date).getTime() + getTimeInMinutes(a.time);
         const dateB = new Date(b.date).getTime() + getTimeInMinutes(b.time);
-        return dateA - dateB;
+        return dateB - dateA; // Changed to sort descending (most recent first)
       });
       setAppointments(userAppointments);
     } catch (error) {
