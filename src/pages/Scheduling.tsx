@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
@@ -22,7 +21,6 @@ const Scheduling = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    // Verificar autenticação
     if (!user) {
       navigate("/");
     }
@@ -41,7 +39,6 @@ const Scheduling = () => {
     setIsSubmitting(true);
 
     try {
-      // Criar e salvar novo agendamento
       await saveAppointment(user.id, {
         barber_id: selectedBarber,
         date: selectedDate.toISOString().split('T')[0],
@@ -53,7 +50,6 @@ const Scheduling = () => {
         description: `Seu horário está marcado para ${selectedTime} no dia ${selectedDate.toLocaleDateString('pt-BR')}`,
       });
       
-      // Reiniciar estado
       setSelectedBarber(null);
       setSelectedDate(null);
       setSelectedTime(null);
@@ -103,7 +99,7 @@ const Scheduling = () => {
             <Button
               onClick={handleConfirmAppointment}
               disabled={!selectedBarber || !selectedDate || !selectedTime || isSubmitting}
-              className="w-full bg-barbearia-yellow text-black hover:bg-amber-400"
+              className="w-full bg-barbearia-yellow text-black hover:bg-amber-500 transition-colors duration-300 focus:ring-2 focus:ring-amber-600"
             >
               {isSubmitting ? "Processando..." : "Confirmar Agendamento"}
             </Button>
