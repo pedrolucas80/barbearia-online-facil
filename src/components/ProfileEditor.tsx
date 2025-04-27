@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import ProfileAvatar from "@/components/ProfileAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface ProfileEditorProps {
   open: boolean;
@@ -54,7 +54,6 @@ const ProfileEditor = ({ open, onOpenChange }: ProfileEditorProps) => {
     
     setLoading(true);
     try {
-      // Update profile information
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ full_name: fullName })
@@ -74,6 +73,30 @@ const ProfileEditor = ({ open, onOpenChange }: ProfileEditorProps) => {
         variant: "destructive",
         title: "Erro",
         description: "Não foi possível atualizar seu perfil."
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateEmail = async () => {
+    if (!user || !email) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ email });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Verificação de email enviada",
+        description: "Por favor, verifique sua caixa de entrada para confirmar a alteração de email."
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: error.message
       });
     } finally {
       setLoading(false);
@@ -119,7 +142,7 @@ const ProfileEditor = ({ open, onOpenChange }: ProfileEditorProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-barbearia-card border-barbearia-dark sm:max-w-md">
+      <DialogContent className="bg-barbearia-card border-barbearia-dark sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Perfil</DialogTitle>
         </DialogHeader>
@@ -145,12 +168,21 @@ const ProfileEditor = ({ open, onOpenChange }: ProfileEditorProps) => {
 
             <div className="space-y-2">
               <label className="text-sm">Email</label>
-              <Input
-                value={email}
-                disabled
-                className="bg-barbearia-dark border-barbearia-dark opacity-70"
-              />
-              <p className="text-xs text-gray-400">Para alterar seu email, entre em contato com o suporte.</p>
+              <div className="flex gap-2">
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-barbearia-dark border-barbearia-dark flex-1"
+                />
+                <Button 
+                  onClick={updateEmail}
+                  disabled={loading || email === user?.email}
+                  className="bg-barbearia-yellow text-black hover:bg-amber-400"
+                >
+                  Alterar Email
+                </Button>
+              </div>
             </div>
             
             <Button 
