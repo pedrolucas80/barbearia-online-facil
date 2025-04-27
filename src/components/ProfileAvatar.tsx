@@ -30,14 +30,20 @@ const ProfileAvatar = ({ user, size = "md", editable = false, onAvatarChange }: 
   }, [user.id]);
 
   const getProfile = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('avatar_url')
-      .eq('id', user.id)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .eq('id', user.id)
+        .single();
 
-    if (data?.avatar_url) {
-      setAvatarUrl(data.avatar_url);
+      if (error) throw error;
+      
+      if (data?.avatar_url) {
+        setAvatarUrl(data.avatar_url);
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
     }
   };
 
@@ -50,26 +56,34 @@ const ProfileAvatar = ({ user, size = "md", editable = false, onAvatarChange }: 
       }
 
       const file = event.target.files[0];
-      const filePath = `${user.id}/${Math.random().toString(36).slice(2)}`;
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/${Math.random().toString(36).slice(2)}.${fileExt}`;
 
+      // Upload the file to Supabase storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
+      // Get the public URL
+      const { data: publicUrlData } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
+        
+      if (!publicUrlData || !publicUrlData.publicUrl) {
+        throw new Error('Failed to get public URL for the uploaded image');
+      }
 
+      // Update the user's profile with the new avatar URL
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: publicUrlData.publicUrl })
         .eq('id', user.id);
 
       if (updateError) throw updateError;
 
-      setAvatarUrl(publicUrl);
+      setAvatarUrl(publicUrlData.publicUrl);
       onAvatarChange?.();
 
       toast({
