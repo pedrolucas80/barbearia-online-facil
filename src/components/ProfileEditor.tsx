@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,7 +21,6 @@ const ProfileEditor = ({ open, onOpenChange }: ProfileEditorProps) => {
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Load user profile data when dialog opens
   useState(() => {
     if (open && user) {
       setEmail(user.email || "");
@@ -90,12 +88,12 @@ const ProfileEditor = ({ open, onOpenChange }: ProfileEditorProps) => {
       
       toast({
         title: "Verificação de email enviada",
-        description: "Por favor, verifique sua caixa de entrada para confirmar a alteração de email."
+        description: "Por favor, verifique sua caixa de entrada para confirmar a alteração de email. Seu email só será alterado após a confirmação."
       });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Erro",
+        title: "Erro ao alterar email",
         description: error.message
       });
     } finally {
@@ -115,6 +113,20 @@ const ProfileEditor = ({ open, onOpenChange }: ProfileEditorProps) => {
 
     setLoading(true);
     try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password: currentPassword,
+      });
+
+      if (signInError) {
+        toast({
+          variant: "destructive",
+          title: "Senha atual incorreta",
+          description: "Por favor, verifique sua senha atual e tente novamente."
+        });
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -128,12 +140,11 @@ const ProfileEditor = ({ open, onOpenChange }: ProfileEditorProps) => {
       
       setCurrentPassword("");
       setNewPassword("");
-    } catch (error) {
-      console.error("Error updating password:", error);
+    } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível atualizar sua senha."
+        title: "Erro ao atualizar senha",
+        description: error.message
       });
     } finally {
       setLoading(false);
