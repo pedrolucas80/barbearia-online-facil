@@ -47,7 +47,7 @@ const MyAppointments = () => {
       userAppointments.sort((a, b) => {
         const dateA = new Date(a.date).getTime() + getTimeInMinutes(a.time);
         const dateB = new Date(b.date).getTime() + getTimeInMinutes(b.time);
-        return dateB - dateA; // Changed to sort descending (most recent first)
+        return dateB - dateA; // Most recent first
       });
       setAppointments(userAppointments);
     } catch (error) {
@@ -151,7 +151,7 @@ const MyAppointments = () => {
     return true;
   });
 
-  // Busca nome do barbeiro (agora corretamente, usando cache)
+  // Busca nome do barbeiro (usando o array de barbeiros carregado)
   const getBarberNameById = (barberId: string) => {
     const barber = barbers.find(b => b.id === barberId);
     return barber ? barber.name : "Barbeiro Desconhecido";
