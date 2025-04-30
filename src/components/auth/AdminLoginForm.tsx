@@ -3,9 +3,9 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
+// Admin credentials - in a real app, these would be stored securely
 const ADMIN_EMAIL = "teste@teste.com";
 const ADMIN_PASSWORD = "senha12345";
 
@@ -14,40 +14,39 @@ const AdminLoginForm = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn } = useAuth();
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Restringe login APENAS ao admin fixo
-    if (email.trim().toLowerCase() !== ADMIN_EMAIL) {
-      toast({
-        variant: "destructive",
-        title: "Acesso negado",
-        description: "Apenas o administrador pode acessar esta área.",
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    if (password !== ADMIN_PASSWORD) {
-      toast({
-        variant: "destructive",
-        title: "Senha incorreta",
-        description: "A senha informada está incorreta.",
-      });
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      await signIn(email, password);
+      // Simple check against hardcoded credentials
+      if (email.trim().toLowerCase() !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+        toast({
+          variant: "destructive",
+          title: "Acesso negado",
+          description: email.trim().toLowerCase() !== ADMIN_EMAIL 
+            ? "Apenas o administrador pode acessar esta área."
+            : "Senha incorreta. Verifique e tente novamente.",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // If credentials match, set admin as authenticated
       localStorage.setItem("userType", "admin");
+      toast({
+        title: "Login realizado com sucesso!",
+        description: "Bem-vindo à área administrativa.",
+      });
       navigate("/admin");
     } catch (error) {
-      // O erro já será mostrado pelo AuthContext
+      toast({
+        variant: "destructive",
+        title: "Erro ao fazer login",
+        description: "Ocorreu um erro ao tentar acessar. Tente novamente.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -112,4 +111,3 @@ const AdminLoginForm = () => {
 };
 
 export default AdminLoginForm;
-
