@@ -1,5 +1,6 @@
+
 import { useState } from "react";
-import { format, isToday, isBefore, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addDays } from "date-fns";
+import { format, isToday, isBefore, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSunday, isAfter, isSaturday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -34,6 +35,11 @@ const DateSelection = ({ onSelect, selectedDate }: DateSelectionProps) => {
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinutes = now.getMinutes();
+    
+    // Desabilita domingos (barbearia fechada)
+    if (isSunday(date)) {
+      return true;
+    }
     
     // Se for o dia atual e depois das 18:30, desabilita o dia
     if (isToday(date) && (currentHour > 18 || (currentHour === 18 && currentMinutes >= 30))) {

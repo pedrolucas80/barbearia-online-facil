@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
@@ -9,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { saveAppointment } from "@/services/AppointmentService";
 import AppointmentPreview from "@/components/scheduling/AppointmentPreview";
 import { useAuth } from "@/contexts/AuthContext";
+import { isSaturday, isSunday } from "date-fns";
 
 const Scheduling = () => {
   const [selectedBarber, setSelectedBarber] = useState<string | null>(null);
@@ -26,6 +28,25 @@ const Scheduling = () => {
     }
   }, [navigate, user]);
 
+  // Reset time selection when date changes
+  useEffect(() => {
+    setSelectedTime(null);
+  }, [selectedDate]);
+
+  const handleDateChange = (date: Date) => {
+    // Verificar se é domingo
+    if (isSunday(date)) {
+      toast({
+        variant: "destructive",
+        title: "Dia indisponível",
+        description: "A barbearia não funciona aos domingos."
+      });
+      return;
+    }
+    
+    setSelectedDate(date);
+  };
+
   const handleConfirmAppointment = async () => {
     if (!selectedBarber || !selectedDate || !selectedTime || !user) {
       toast({
@@ -34,6 +55,19 @@ const Scheduling = () => {
         description: "Selecione barbeiro, data e horário.",
       });
       return;
+    }
+
+    // Verificar se é sábado e se o horário é depois de 12:00
+    if (isSaturday(selectedDate)) {
+      const hour = parseInt(selectedTime.split(":")[0]);
+      if (hour >= 12) {
+        toast({
+          variant: "destructive",
+          title: "Horário indisponível",
+          description: "Aos sábados, a barbearia funciona apenas até 12:00h.",
+        });
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -78,7 +112,7 @@ const Scheduling = () => {
           />
           
           <DateSelection 
-            onSelect={setSelectedDate}
+            onSelect={handleDateChange}
             selectedDate={selectedDate}
           />
           

@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { isSaturday } from "date-fns";
 
 interface TimeSelectionProps {
   onSelect: (time: string) => void;
@@ -43,6 +44,15 @@ const TimeSelection = ({ onSelect, selectedTime, date, barberId }: TimeSelection
   const isTimeDisabled = (time: string): boolean => {
     if (!date || !barberId) return true;
     
+    // Sábado só funciona até 12:00h
+    if (isSaturday(date)) {
+      // Extrair a hora do horário
+      const hourPart = parseInt(time.split(":")[0]);
+      if (hourPart >= 12) {
+        return true;
+      }
+    }
+    
     const [hours, minutes] = time.split(":").map(Number);
     const selectedDateTime = new Date(date);
     selectedDateTime.setHours(hours, minutes);
@@ -51,6 +61,9 @@ const TimeSelection = ({ onSelect, selectedTime, date, barberId }: TimeSelection
     
     return bookedTimes.includes(time) || selectedDateTime < now;
   };
+
+  // Verifica se é sábado para mostrar ou não os horários da tarde
+  const showAfternoonHours = date && !isSaturday(date);
 
   if (!date || !barberId) {
     return (
@@ -93,27 +106,31 @@ const TimeSelection = ({ onSelect, selectedTime, date, barberId }: TimeSelection
             })}
           </div>
 
-          <h3 className="text-lg mb-3 text-gray-400">Tarde</h3>
-          <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-            {afternoonTimes.map((time) => {
-              const disabled = isTimeDisabled(time);
-              return (
-                <Button
-                  key={time}
-                  variant={selectedTime === time ? "default" : "outline"}
-                  onClick={() => !disabled && onSelect(time)}
-                  disabled={disabled}
-                  className={cn(
-                    selectedTime === time 
-                      ? "bg-barbearia-yellow text-black hover:bg-amber-400" 
-                      : "border-gray-700 hover:bg-barbearia-dark"
-                  )}
-                >
-                  {time}
-                </Button>
-              );
-            })}
-          </div>
+          {showAfternoonHours && (
+            <>
+              <h3 className="text-lg mb-3 text-gray-400">Tarde</h3>
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                {afternoonTimes.map((time) => {
+                  const disabled = isTimeDisabled(time);
+                  return (
+                    <Button
+                      key={time}
+                      variant={selectedTime === time ? "default" : "outline"}
+                      onClick={() => !disabled && onSelect(time)}
+                      disabled={disabled}
+                      className={cn(
+                        selectedTime === time 
+                          ? "bg-barbearia-yellow text-black hover:bg-amber-400" 
+                          : "border-gray-700 hover:bg-barbearia-dark"
+                      )}
+                    >
+                      {time}
+                    </Button>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
