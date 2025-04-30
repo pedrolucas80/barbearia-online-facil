@@ -1,11 +1,21 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import ProfileAvatar from "@/components/ProfileAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { 
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage 
+} from "@/components/ui/form";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 interface ProfileEditorProps {
   open: boolean;
@@ -16,17 +26,18 @@ const ProfileEditor = ({ open, onOpenChange }: ProfileEditorProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  useState(() => {
+  useEffect(() => {
     if (open && user) {
-      setEmail(user.email || "");
       loadProfile();
+      setForgotPasswordEmail(user.email || "");
     }
-  });
+  }, [open, user]);
 
   const loadProfile = async () => {
     if (!user) return;
@@ -71,30 +82,6 @@ const ProfileEditor = ({ open, onOpenChange }: ProfileEditorProps) => {
         variant: "destructive",
         title: "Erro",
         description: "Não foi possível atualizar seu perfil."
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateEmail = async () => {
-    if (!user || !email) return;
-    
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.updateUser({ email });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Verificação de email enviada",
-        description: "Por favor, verifique sua caixa de entrada para confirmar a alteração de email. Seu email só será alterado após a confirmação."
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao alterar email",
-        description: error.message
       });
     } finally {
       setLoading(false);
@@ -151,6 +138,49 @@ const ProfileEditor = ({ open, onOpenChange }: ProfileEditorProps) => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!forgotPasswordEmail) {
+      toast({
+        variant: "destructive",
+        title: "Campo obrigatório",
+        description: "Por favor, informe seu email."
+      });
+      return;
+    }
+
+    if (forgotPasswordEmail !== user?.email) {
+      toast({
+        variant: "destructive",
+        title: "Email incorreto",
+        description: "O email informado não corresponde ao seu email de cadastro."
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Email enviado",
+        description: "Um email de recuperação de senha foi enviado para você."
+      });
+      setShowForgotPassword(false);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao enviar email",
+        description: error.message
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-barbearia-card border-barbearia-dark sm:max-w-md max-h-[90vh] overflow-y-auto">
@@ -158,15 +188,22 @@ const ProfileEditor = ({ open, onOpenChange }: ProfileEditorProps) => {
           <DialogTitle>Editar Perfil</DialogTitle>
         </DialogHeader>
         
-        <div className="flex flex-col items-center mb-4">
-          {user && (
-            <ProfileAvatar user={user} size="lg" editable onAvatarChange={loadProfile} />
-          )}
-        </div>
-        
         <div className="space-y-6">
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Informações Pessoais</h3>
+            
+            <div className="space-y-2">
+              <label className="text-sm">Email</label>
+              <div className="flex gap-2">
+                <Input
+                  type="email"
+                  value={user?.email || ""}
+                  readOnly
+                  className="bg-barbearia-dark border-barbearia-dark flex-1"
+                />
+              </div>
+            </div>
+            
             <div className="space-y-2">
               <label className="text-sm">Nome Completo</label>
               <Input
@@ -175,25 +212,6 @@ const ProfileEditor = ({ open, onOpenChange }: ProfileEditorProps) => {
                 placeholder="Seu nome completo"
                 className="bg-barbearia-dark border-barbearia-dark"
               />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm">Email</label>
-              <div className="flex gap-2">
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="bg-barbearia-dark border-barbearia-dark flex-1"
-                />
-                <Button 
-                  onClick={updateEmail}
-                  disabled={loading || email === user?.email}
-                  className="bg-barbearia-yellow text-black hover:bg-amber-400"
-                >
-                  Alterar Email
-                </Button>
-              </div>
             </div>
             
             <Button 
@@ -207,35 +225,85 @@ const ProfileEditor = ({ open, onOpenChange }: ProfileEditorProps) => {
 
           <div className="space-y-4 pt-4 border-t border-gray-700">
             <h3 className="text-lg font-medium">Alterar Senha</h3>
-            <div className="space-y-2">
-              <label className="text-sm">Senha Atual</label>
-              <Input
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="********"
-                className="bg-barbearia-dark border-barbearia-dark"
-              />
-            </div>
             
-            <div className="space-y-2">
-              <label className="text-sm">Nova Senha</label>
-              <Input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="********"
-                className="bg-barbearia-dark border-barbearia-dark"
-              />
-            </div>
-            
-            <Button 
-              onClick={updatePassword}
-              disabled={loading || !currentPassword || !newPassword}
-              className="w-full bg-barbearia-yellow text-black hover:bg-amber-400"
-            >
-              {loading ? "Atualizando..." : "Atualizar Senha"}
-            </Button>
+            {!showForgotPassword ? (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm">Senha Atual</label>
+                  <Input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="********"
+                    className="bg-barbearia-dark border-barbearia-dark"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm">Nova Senha</label>
+                  <Input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="********"
+                    className="bg-barbearia-dark border-barbearia-dark"
+                  />
+                </div>
+                
+                <Button 
+                  onClick={updatePassword}
+                  disabled={loading || !currentPassword || !newPassword}
+                  className="w-full bg-barbearia-yellow text-black hover:bg-amber-400"
+                >
+                  {loading ? "Atualizando..." : "Atualizar Senha"}
+                </Button>
+
+                <div className="text-center">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowForgotPassword(true)}
+                    className="text-sm text-barbearia-yellow hover:underline"
+                  >
+                    Não lembro minha senha atual
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm">
+                  Para redefinir sua senha, informe seu email de cadastro. Enviaremos um link para você criar uma nova senha.
+                </p>
+                <div className="space-y-2">
+                  <label className="text-sm">Email</label>
+                  <Input
+                    type="email"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    placeholder="seu@email.com"
+                    className="bg-barbearia-dark border-barbearia-dark"
+                  />
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleForgotPassword}
+                    disabled={loading || !forgotPasswordEmail}
+                    className="flex-1 bg-barbearia-yellow text-black hover:bg-amber-400"
+                  >
+                    {loading ? "Enviando..." : "Enviar Link"}
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => setShowForgotPassword(false)}
+                    disabled={loading}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Voltar
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
