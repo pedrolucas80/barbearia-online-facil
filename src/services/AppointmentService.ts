@@ -103,7 +103,7 @@ export const getBookedTimes = async (date: Date, barberId: string): Promise<stri
   return data?.map(app => app.time) || [];
 };
 
-// Nova função: buscar barbeiros do Supabase
+// Buscar barbeiros do Supabase
 export const getBarbers = async (): Promise<Barber[]> => {
   const { data, error } = await supabase
     .from('barbers')
@@ -122,7 +122,7 @@ export const setBarberActiveStatus = async (barberId: string, active: boolean) =
   if (error) throw error;
 };
 
-// Buscar nome do barbeiro (buscando em cache dos barbers, ou retornar id)
+// Buscar nome do barbeiro (usando barbers da cache ou diretamente do banco)
 export const getBarberName = (barberId: string, barbers?: Barber[]): string => {
   if (barbers) {
     const barber = barbers.find(b => b.id === barberId);
